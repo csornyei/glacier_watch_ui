@@ -221,7 +221,10 @@ class JSONDataSource extends DataSource {
       `${this.baseUrl}/glacier/${glacierId}.json`
     );
 
-    const { glacier, timeseries } = response.data;
+    const {
+      glacier,
+      timeseries: { timeseries },
+    } = response.data;
 
     const updatedTimeseries = timeseries.sort(
       (a: GlacierTimeSeriesDataPoint, b: GlacierTimeSeriesDataPoint) =>

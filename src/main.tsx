@@ -19,6 +19,7 @@ import ScenePage from "./pages/ScenePage.tsx";
 
 import actions from "./utils/actions.ts";
 import loaders from "./utils/loaders.ts";
+import "./utils/leafletFix.ts";
 
 const router = createBrowserRouter([
   {
