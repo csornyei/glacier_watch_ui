@@ -13,7 +13,7 @@ interface ProjectDetailsProps {
 const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectDetails }) => {
   return (
     <Box h="100%" className={styles.drawer_details}>
-      <h3>{projectDetails.name}</h3>
+      <h3>{projectDetails.project.name}</h3>
 
       <Tabs defaultValue="glaciers" variant="pills" keepMounted={false}>
         <Tabs.List>
@@ -32,14 +32,14 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectDetails }) => {
         >
           <Tabs.Panel value="glaciers" pt="xs">
             <GlaciersPanel
-              projectId={projectDetails.project_id}
-              glaciers={projectDetails.glaciers}
+              projectId={projectDetails.project.project_id}
+              glaciers={projectDetails.project.glaciers}
             />
           </Tabs.Panel>
           <Tabs.Panel value="scenes" pt="xs">
             <ScenesPanel
-              projectId={projectDetails.project_id}
-              scenes={projectDetails.scenes}
+              projectId={projectDetails.project.project_id}
+              scenes={projectDetails.project.scenes}
             />
           </Tabs.Panel>
         </ScrollArea.Autosize>
