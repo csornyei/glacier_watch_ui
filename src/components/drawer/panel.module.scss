@@ -1,0 +1,8 @@
+.list_item {
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    background-color: var(--mantine-color-gray-0);
+  }
+}
