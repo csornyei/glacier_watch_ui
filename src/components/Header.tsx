@@ -2,6 +2,7 @@ import { Link } from "react-router";
 import { Burger, Flex } from "@mantine/core";
 import styles from "./header.module.scss";
 import { linkHelper } from "../utils/linkHelper";
+import { isApiSource } from "../utils/dataSourceFactory";
 
 interface HeaderProps {
   projectDetails?: {
@@ -28,9 +29,10 @@ export default function Header({
 }: HeaderProps) {
   return (
     <Flex direction="row" align="center" gap="sm" className={styles.header}>
-      {openDrawer ? (
-        <Burger opened={opened} onClick={openDrawer} size="sm" />
-      ) : null}
+      {isApiSource() &&
+        (openDrawer ? (
+          <Burger opened={opened} onClick={openDrawer} size="sm" />
+        ) : null)}
       <h2>
         <Link to={linkHelper.root()}>Glacier Watch</Link>
       </h2>

@@ -31,3 +31,7 @@ export default function getDataSource(): DataSource {
       throw new Error(`Unknown data source type: ${dataSourceType}`);
   }
 }
+
+export function isApiSource(): boolean {
+  return dataSourceType === "api";
+}

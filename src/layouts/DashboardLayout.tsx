@@ -7,6 +7,7 @@ import type {
   GlacierResponse,
   ProjectDetails,
   ProjectList,
+  SceneDetails,
 } from "../utils/types";
 import { useDisclosure } from "@mantine/hooks";
 import Header from "../components/Header";
@@ -17,6 +18,7 @@ function DashboardLayout() {
   const dataProjectDetails = useRouteLoaderData<ProjectDetails>("project");
 
   const glacierDetails = useRouteLoaderData<GlacierResponse>("glacier");
+  const sceneDetails = useRouteLoaderData<{ scene: SceneDetails }>("scene");
 
   return (
     <AppShell
@@ -61,6 +63,13 @@ function DashboardLayout() {
                     name: glacierDetails.glacier.name
                       ? glacierDetails.glacier.name
                       : "Unnamed Glacier",
+                  }
+                : undefined
+            }
+            scene={
+              sceneDetails
+                ? {
+                    scene_id: sceneDetails.scene.scene_id,
                   }
                 : undefined
             }
