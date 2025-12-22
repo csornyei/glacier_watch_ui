@@ -48,7 +48,7 @@ jobs:
             aws s3 sync dist s3://${{ env.S3_BUCKET }}/ --delete
 
         - name: CloudFront invalidation (optional)
-          if: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID != '' }}
+          if: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} != ''
           run: |
             aws cloudfront create-invalidation \
               --distribution-id "${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}" \
