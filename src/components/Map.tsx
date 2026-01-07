@@ -9,24 +9,35 @@ import {
 } from "react-leaflet";
 import type { GeoJsonObject } from "geojson";
 import L from "leaflet";
+import type { GeojsonData } from "../utils/types";
 
 interface MapProps {
   markers?: { position: [number, number]; popupText: string | JSX.Element }[];
   bounds?: [[number, number], [number, number]];
   center?: [number, number];
-  geojsonData?: GeoJsonObject;
+  geojsonData?: GeojsonData[];
 }
 
-function FitToGeoJSON({ geojson }: { geojson: GeoJsonObject }) {
+function FitToGeoJSON({ geojsons }: { geojsons: GeoJsonObject[] }) {
   const map = useMap();
 
   useEffect(() => {
-    const layer = L.geoJSON(geojson);
-    const b = layer.getBounds();
+    if (!geojsons || geojsons.length === 0) {
+      return;
+    }
+
+    const group = L.featureGroup();
+
+    geojsons.forEach((geojson) => {
+      const layer = L.geoJSON(geojson);
+      group.addLayer(layer);
+    });
+
+    const b = group.getBounds();
     if (b.isValid()) {
       map.fitBounds(b, { padding: [20, 20] });
     }
-  }, [geojson, map]);
+  }, [geojsons, map]);
 
   return null;
 }
@@ -37,6 +48,7 @@ export default function Map({
   center,
   geojsonData,
 }: MapProps) {
+  console.log("Map props - geojsonData:", geojsonData);
   return (
     <MapContainer
       center={bounds ? undefined : center}
@@ -58,8 +70,10 @@ export default function Map({
       ))}
       {geojsonData && (
         <>
-          <FitToGeoJSON geojson={geojsonData} />
-          <GeoJSON data={geojsonData} />
+          <FitToGeoJSON geojsons={geojsonData.map((d) => d.data)} />
+          {geojsonData.map((data) => (
+            <GeoJSON key={data.key} data={data.data} />
+          ))}
         </>
       )}
     </MapContainer>

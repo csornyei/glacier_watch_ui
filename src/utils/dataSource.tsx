@@ -111,6 +111,12 @@ class APIDataSource extends DataSource {
         timeseries: GlacierTimeSeriesDataPoint[];
       }>(`/glacier/${glacierId}/timeseries`);
 
+      glacierTimeSeries.data.timeseries.sort(
+        (a, b) =>
+          new Date(a.acquisition_date).getTime() -
+          new Date(b.acquisition_date).getTime()
+      );
+
       const response: GlacierResponse = {
         glacier: glacierDetails.data,
         timeseries: glacierTimeSeries.data.timeseries,

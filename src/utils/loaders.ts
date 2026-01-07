@@ -1,6 +1,7 @@
 import type { LoaderFunctionArgs } from "react-router";
 
 import getDataSource from "./dataSourceFactory";
+import type { GlacierLoaderResponse } from "./types";
 
 const ds = getDataSource();
 
@@ -16,13 +17,31 @@ async function projectDetails({ params }: LoaderFunctionArgs) {
   return projectDetails;
 }
 
-async function glacierDetails({ params }: LoaderFunctionArgs) {
+async function glacierDetails({
+  params,
+  request,
+}: LoaderFunctionArgs): Promise<GlacierLoaderResponse> {
   const glacier = await ds.getGlacierDetails(
     params.project_id!,
     params.glacier_id!
   );
 
-  return { ...glacier };
+  if (!glacier) {
+    throw new Response("Glacier Not Found", { status: 404 });
+  }
+
+  const requestUrl = new URL(request.url);
+  const compare = requestUrl.searchParams.get("compare");
+
+  if (compare) {
+    const compareGlacier = await ds.getGlacierDetails(
+      params.project_id!,
+      compare
+    );
+    return { ...glacier, compare_glacier: compareGlacier };
+  }
+
+  return { ...glacier, compare_glacier: null };
 }
 
 async function sceneDetails({ params }: LoaderFunctionArgs) {

@@ -57,6 +57,15 @@ export type GlacierResponse = {
   timeseries: GlacierTimeSeriesDataPoint[];
 };
 
+export type GlacierLoaderResponse = GlacierResponse & {
+  compare_glacier: GlacierResponse | null;
+};
+
+export type GeojsonData = {
+  key: string;
+  data: GeoJsonObject;
+};
+
 export interface SceneDetails extends Scene {
   attempts_download: number;
   attempts_processing: number;

@@ -22,7 +22,7 @@ function DashboardLayout() {
 
   return (
     <AppShell
-      header={{ height: opened ? 0 : 40 }}
+      header={{ height: 40 }}
       navbar={
         opened
           ? {
@@ -36,6 +36,31 @@ function DashboardLayout() {
           : undefined
       }
     >
+      <AppShell.Header>
+        <Header
+          projectDetails={dataProjectDetails?.project}
+          openDrawer={open}
+          closeDrawer={close}
+          opened={opened}
+          glacier={
+            glacierDetails
+              ? {
+                  glacier_id: glacierDetails.glacier.glacier_id,
+                  name: glacierDetails.glacier.name
+                    ? glacierDetails.glacier.name
+                    : "Unnamed Glacier",
+                }
+              : undefined
+          }
+          scene={
+            sceneDetails
+              ? {
+                  scene_id: sceneDetails.scene.scene_id,
+                }
+              : undefined
+          }
+        />
+      </AppShell.Header>
       {opened ? (
         <AppShell.Navbar
           style={{
@@ -44,38 +69,9 @@ function DashboardLayout() {
             overflow: "hidden",
           }}
         >
-          <Drawer
-            projects={data}
-            selectedProject={dataProjectDetails}
-            close={close}
-          />
+          <Drawer projects={data} selectedProject={dataProjectDetails} />
         </AppShell.Navbar>
-      ) : (
-        <AppShell.Header>
-          <Header
-            projectDetails={dataProjectDetails?.project}
-            openDrawer={open}
-            opened={opened}
-            glacier={
-              glacierDetails
-                ? {
-                    glacier_id: glacierDetails.glacier.glacier_id,
-                    name: glacierDetails.glacier.name
-                      ? glacierDetails.glacier.name
-                      : "Unnamed Glacier",
-                  }
-                : undefined
-            }
-            scene={
-              sceneDetails
-                ? {
-                    scene_id: sceneDetails.scene.scene_id,
-                  }
-                : undefined
-            }
-          />
-        </AppShell.Header>
-      )}
+      ) : undefined}
 
       <AppShell.Main>
         <Outlet />

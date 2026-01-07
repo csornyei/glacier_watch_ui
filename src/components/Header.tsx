@@ -2,7 +2,6 @@ import { Link } from "react-router";
 import { Burger, Flex } from "@mantine/core";
 import styles from "./header.module.scss";
 import { linkHelper } from "../utils/linkHelper";
-import { isApiSource } from "../utils/dataSourceFactory";
 
 interface HeaderProps {
   projectDetails?: {
@@ -11,6 +10,7 @@ interface HeaderProps {
   };
   opened?: boolean;
   openDrawer?: () => void;
+  closeDrawer?: () => void;
   glacier?: {
     glacier_id: string;
     name: string;
@@ -24,15 +24,25 @@ export default function Header({
   projectDetails,
   opened,
   openDrawer,
+  closeDrawer,
   glacier,
   scene,
 }: HeaderProps) {
   return (
     <Flex direction="row" align="center" gap="sm" className={styles.header}>
-      {isApiSource() &&
-        (openDrawer ? (
-          <Burger opened={opened} onClick={openDrawer} size="sm" />
-        ) : null)}
+      {openDrawer && closeDrawer ? (
+        <Burger
+          opened={opened}
+          onClick={() => {
+            if (opened) {
+              closeDrawer();
+            } else {
+              openDrawer();
+            }
+          }}
+          size="sm"
+        />
+      ) : null}
       <h2>
         <Link to={linkHelper.root()}>Glacier Watch</Link>
       </h2>
