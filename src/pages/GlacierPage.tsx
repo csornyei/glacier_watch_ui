@@ -1,9 +1,13 @@
 import { useRouteLoaderData } from "react-router";
 
-import type { GlacierLoaderResponse, GlacierResponse } from "../utils/types";
+import type { GlacierLoaderResponse } from "../utils/types";
 import GlacierPageHeader from "../components/glacier/Header";
 import GlacierMap from "../components/glacier/Map";
 import GlacierCharts from "../components/glacier/Charts";
+
+const getGlacierName = (glacierName: string | null, glacierId: string) => {
+  return glacierName ? glacierName : `Unnamed Glacier (${glacierId})`;
+};
 
 export default function GlacierPage() {
   const glacierDetails = useRouteLoaderData<GlacierLoaderResponse>("glacier");
@@ -12,64 +16,53 @@ export default function GlacierPage() {
     return <div>Loading...</div>;
   }
 
-  let otherGlacier: GlacierResponse | null = null;
-  if (glacierDetails.compare_glacier) {
-    otherGlacier = glacierDetails.compare_glacier;
-  }
+  const {
+    glacier: mainGlacier,
+    timeseries: mainTimeseries,
+    compare_glacier: otherGlaciers,
+  } = glacierDetails;
 
   const mapGeojsons = [
     {
-      key: glacierDetails.glacier.glacier_id,
-      data: glacierDetails.glacier.geometry,
+      key: mainGlacier.glacier_id,
+      data: mainGlacier.geometry,
     },
-  ];
-  if (otherGlacier) {
-    mapGeojsons.push({
+    ...otherGlaciers.map((otherGlacier) => ({
       key: otherGlacier.glacier.glacier_id,
       data: otherGlacier.glacier.geometry,
-    });
-  }
+    })),
+  ];
 
   return (
     <div>
       <GlacierPageHeader
         mainGlacierDetails={{
-          glacierName: glacierDetails.glacier.name
-            ? glacierDetails.glacier.name
-            : "Unnamed Glacier",
-          areaM2: glacierDetails.glacier.area_m2,
+          glacierName: getGlacierName(mainGlacier.name, mainGlacier.glacier_id),
+          areaM2: mainGlacier.area_m2,
         }}
-        compareGlacierDetails={
-          otherGlacier
-            ? {
-                glacierName: otherGlacier.glacier.name
-                  ? otherGlacier.glacier.name
-                  : "Unnamed Glacier",
-                areaM2: otherGlacier.glacier.area_m2,
-              }
-            : undefined
-        }
+        compareGlacierDetails={otherGlaciers.map((otherGlacier) => ({
+          glacierName: getGlacierName(
+            otherGlacier.glacier.name,
+            otherGlacier.glacier.glacier_id
+          ),
+          areaM2: otherGlacier.glacier.area_m2,
+        }))}
       />
       <GlacierMap geojsons={mapGeojsons} />
       <GlacierCharts
         mainGlacierName={
-          glacierDetails.glacier.name
-            ? glacierDetails.glacier.name
-            : `Unnamed Glacier (${glacierDetails.glacier.glacier_id})`
+          mainGlacier.name
+            ? mainGlacier.name
+            : `Unnamed Glacier (${mainGlacier.glacier_id})`
         }
-        mainGlacierTimeseries={glacierDetails.timeseries}
-        otherGlaciers={
-          otherGlacier
-            ? [
-                {
-                  name: otherGlacier.glacier.name
-                    ? otherGlacier.glacier.name
-                    : `Unnamed Glacier (${otherGlacier.glacier.glacier_id})`,
-                  timeseries: otherGlacier.timeseries,
-                },
-              ]
-            : []
-        }
+        mainGlacierTimeseries={mainTimeseries}
+        otherGlaciers={otherGlaciers.map((otherGlacier) => ({
+          name: getGlacierName(
+            otherGlacier.glacier.name,
+            otherGlacier.glacier.glacier_id
+          ),
+          timeseries: otherGlacier.timeseries,
+        }))}
       />
     </div>
   );

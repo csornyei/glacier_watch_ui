@@ -20,7 +20,10 @@ export const parseUrl = () => {
     projectId?: string;
     glacierId?: string;
     sceneId?: string;
-  } = {};
+    compare: string[];
+  } = {
+    compare: [],
+  };
 
   if (pathSegments.length >= 2 && pathSegments[0] === "p") {
     result.projectId = pathSegments[1];
@@ -30,6 +33,11 @@ export const parseUrl = () => {
   }
   if (pathSegments.length >= 4 && pathSegments[2] === "scene") {
     result.sceneId = pathSegments[3];
+  }
+
+  const compareParam = url.searchParams.get("compare");
+  if (compareParam) {
+    result.compare = compareParam.split(",").filter((val) => val.length > 0);
   }
 
   return result;

@@ -58,7 +58,7 @@ export type GlacierResponse = {
 };
 
 export type GlacierLoaderResponse = GlacierResponse & {
-  compare_glacier: GlacierResponse | null;
+  compare_glacier: GlacierResponse[];
 };
 
 export type GeojsonData = {
