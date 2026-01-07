@@ -1,9 +1,9 @@
 import { useRouteLoaderData } from "react-router";
 
 import type { GlacierLoaderResponse, GlacierResponse } from "../utils/types";
-import ResponsiveContainer from "../components/charts/ResponsiveContainer";
 import GlacierPageHeader from "../components/glacier/Header";
 import GlacierMap from "../components/glacier/Map";
+import GlacierCharts from "../components/glacier/Charts";
 
 export default function GlacierPage() {
   const glacierDetails = useRouteLoaderData<GlacierLoaderResponse>("glacier");
@@ -51,34 +51,26 @@ export default function GlacierPage() {
         }
       />
       <GlacierMap geojsons={mapGeojsons} />
-      <div>
-        <h3>Time Series Data</h3>
-
-        <ResponsiveContainer
-          points={glacierDetails.timeseries.map((ts) => {
-            return {
-              x: new Date(ts.acquisition_date),
-              y: Number((ts.snow_area_m2 / 1_000_000).toFixed(2)),
-            };
-          })}
-          label="Snow Area (km²)"
-        />
-        <ResponsiveContainer
-          points={glacierDetails.timeseries.map((ts) => ({
-            x: new Date(ts.acquisition_date),
-            y: Math.round(ts.snowline_elevation_m),
-          }))}
-          label="Snowline Elevation (m)"
-          customYThreshold={20}
-        />
-        <ResponsiveContainer
-          points={glacierDetails.timeseries.map((ts) => ({
-            x: new Date(ts.acquisition_date),
-            y: Number(ts.snow_area_fraction.toFixed(2)),
-          }))}
-          label="Snow Area Fraction"
-        />
-      </div>
+      <GlacierCharts
+        mainGlacierName={
+          glacierDetails.glacier.name
+            ? glacierDetails.glacier.name
+            : `Unnamed Glacier (${glacierDetails.glacier.glacier_id})`
+        }
+        mainGlacierTimeseries={glacierDetails.timeseries}
+        otherGlaciers={
+          otherGlacier
+            ? [
+                {
+                  name: otherGlacier.glacier.name
+                    ? otherGlacier.glacier.name
+                    : `Unnamed Glacier (${otherGlacier.glacier.glacier_id})`,
+                  timeseries: otherGlacier.timeseries,
+                },
+              ]
+            : []
+        }
+      />
     </div>
   );
 }

@@ -7,14 +7,19 @@ type TimeseriesPoint = {
   y: number;
 };
 
-export type TimeSeriesLineChartProps = {
+type Series = {
+  label: string;
   points: TimeseriesPoint[];
+  color?: string;
+};
+
+export type TimeSeriesLineChartProps = {
+  series: Series[];
   width?: number;
   height?: number;
   label: string;
+  meassure?: string;
 
-  showPoints?: boolean;
-  pointRadius?: number;
   gapDaysToBreakLine?: number;
   seasonalColoring?: boolean;
   customYThreshold?: number;
@@ -24,7 +29,10 @@ type HoverState = {
   visible: boolean;
   px: number;
   py: number;
-  dataPoint: TimeseriesPoint | null;
+  dataPoints: {
+    point: TimeseriesPoint;
+    series: { label: string; color?: string };
+  }[];
 } | null;
 
 const getSeason = (date: Date): "winter" | "spring" | "summer" | "autumn" => {
@@ -85,15 +93,14 @@ function seasonIntervals(domain: [Date, Date]) {
 }
 
 const TimeSeriesLineChart: React.FC<TimeSeriesLineChartProps> = ({
-  points,
+  series,
   width = 800,
   height = 400,
   label,
-  showPoints = true,
-  pointRadius = 3,
   gapDaysToBreakLine = 60,
   seasonalColoring = true,
   customYThreshold = 0,
+  meassure = "",
 }) => {
   const margin = { top: 20, right: 30, bottom: 40, left: 70 };
 
@@ -102,10 +109,11 @@ const TimeSeriesLineChart: React.FC<TimeSeriesLineChartProps> = ({
 
   const [hover, setHover] = useState<HoverState>(null);
 
+  const allPoints = series.flatMap((s) => s.points);
+
   const {
     xScale,
     yScale,
-    pathD,
     xTicks,
     yTicks,
     formatDate,
@@ -116,7 +124,7 @@ const TimeSeriesLineChart: React.FC<TimeSeriesLineChartProps> = ({
     const formatDate = d3.timeFormat("%Y-%m-%d");
     const formatY = (v: number) => d3.format(",")(v);
 
-    const sorted = [...points].sort((a, b) => a.x.getTime() - b.x.getTime());
+    const sorted = [...allPoints].sort((a, b) => a.x.getTime() - b.x.getTime());
 
     const xMin = d3.min(sorted, (d: TimeseriesPoint) => d.x) ?? new Date();
     const xMax = d3.max(sorted, (d: TimeseriesPoint) => d.x) ?? new Date();
@@ -142,24 +150,6 @@ const TimeSeriesLineChart: React.FC<TimeSeriesLineChartProps> = ({
       .nice()
       .range([innerHeight, 0]);
 
-    const maxGapMs = gapDaysToBreakLine
-      ? gapDaysToBreakLine * 24 * 60 * 60 * 1000
-      : null;
-
-    const line = d3
-      .line<TimeseriesPoint>()
-      .defined((d, i, arr) => {
-        if (!maxGapMs) return true;
-        if (i === 0) return true;
-        const prev = arr[i - 1];
-        return d.x.getTime() - prev.x.getTime() <= maxGapMs;
-      })
-      .x((d: TimeseriesPoint) => xScale(d.x))
-      .y((d: TimeseriesPoint) => yScale(d.y))
-      .curve(d3.curveMonotoneX);
-
-    const pathD = line(points) ?? "";
-
     const xTicks = xScale.ticks(6);
     const yTicks = yScale.ticks(6);
 
@@ -169,7 +159,6 @@ const TimeSeriesLineChart: React.FC<TimeSeriesLineChartProps> = ({
     return {
       xScale,
       yScale,
-      pathD,
       xTicks,
       yTicks,
       formatDate,
@@ -177,14 +166,30 @@ const TimeSeriesLineChart: React.FC<TimeSeriesLineChartProps> = ({
       bands,
       bisectDate,
     };
-  }, [
-    points,
-    innerHeight,
-    innerWidth,
-    gapDaysToBreakLine,
-    seasonalColoring,
-    customYThreshold,
-  ]);
+  }, [allPoints, innerHeight, innerWidth, seasonalColoring, customYThreshold]);
+
+  const seriesPaths = series.map((s, idx) => {
+    const line = d3
+      .line<TimeseriesPoint>()
+      .defined((d, i, arr) => {
+        if (!gapDaysToBreakLine) return true;
+        if (i === 0) return true;
+        const prev = arr[i - 1];
+        return (
+          d.x.getTime() - prev.x.getTime() <=
+          gapDaysToBreakLine * 24 * 60 * 60 * 1000
+        );
+      })
+      .x((d: TimeseriesPoint) => xScale(d.x))
+      .y((d: TimeseriesPoint) => yScale(d.y))
+      .curve(d3.curveMonotoneX);
+
+    return {
+      line: line(s.points) ?? "",
+      color: s.color || d3.schemeCategory10[idx % 10],
+      label: s.label,
+    };
+  });
 
   const onMove: React.MouseEventHandler<SVGRectElement> = (e) => {
     const rect = (
@@ -200,23 +205,40 @@ const TimeSeriesLineChart: React.FC<TimeSeriesLineChartProps> = ({
 
     const date = xScale.invert(mx);
 
-    // find nearest point
-    const sorted = [...points].sort((a, b) => a.x.getTime() - b.x.getTime());
-    const i = bisectDate(sorted, date, 1);
-    const a = sorted[i - 1];
-    const b = sorted[i];
-    const nearest = !b
-      ? a
-      : date.getTime() - a.x.getTime() > b.x.getTime() - date.getTime()
-      ? b
-      : a;
+    const dataPoints: {
+      point: TimeseriesPoint;
+      series: { label: string; color?: string };
+    }[] = [];
 
-    setHover({
-      visible: true,
-      px: xScale(nearest.x),
-      py: yScale(nearest.y),
-      dataPoint: nearest,
+    series.forEach((s) => {
+      const sorted = [...s.points].sort(
+        (a, b) => a.x.getTime() - b.x.getTime()
+      );
+      const i = bisectDate(sorted, date, 1);
+      const a = sorted[i - 1];
+      const b = sorted[i];
+      const candidate = !b
+        ? a
+        : date.getTime() - a.x.getTime() > b.x.getTime() - date.getTime()
+        ? b
+        : a;
+
+      dataPoints.push({
+        point: candidate,
+        series: { label: s.label, color: s.color },
+      });
     });
+
+    if (dataPoints.length > 0) {
+      setHover({
+        visible: true,
+        px: xScale(date),
+        py: my,
+        dataPoints: dataPoints,
+      });
+    } else {
+      setHover(null);
+    }
   };
 
   const onLeave: React.MouseEventHandler<SVGRectElement> = () => setHover(null);
@@ -258,19 +280,28 @@ const TimeSeriesLineChart: React.FC<TimeSeriesLineChartProps> = ({
             ))}
           </g>
 
-          <path d={pathD} fill="none" stroke="currentColor" strokeWidth={2} />
+          {seriesPaths.map((s) => (
+            <path
+              key={s.label}
+              d={s.line}
+              fill="none"
+              stroke={s.color}
+              strokeWidth={2}
+            />
+          ))}
 
-          {showPoints &&
-            points.map((p) => (
+          {series.map((s) => {
+            return s.points.map((p, i) => (
               <circle
-                key={p.x.toISOString()}
+                key={`${s.label}-point-${i}`}
                 cx={xScale(p.x)}
                 cy={yScale(p.y)}
-                r={pointRadius}
-                fill="currentColor"
-                opacity={0.9}
+                r={2}
+                fill={s.color || "currentColor"}
+                opacity={0.8}
               />
-            ))}
+            ));
+          })}
 
           {hover && (
             <g pointerEvents="none">
@@ -282,41 +313,48 @@ const TimeSeriesLineChart: React.FC<TimeSeriesLineChartProps> = ({
                 stroke="currentColor"
                 opacity={0.25}
               />
-              <circle
-                cx={hover.px}
-                cy={hover.py}
-                r={6}
-                fill="currentColor"
-                opacity={0.9}
-              />
+              {hover.dataPoints.map((dp, idx) => (
+                <g key={idx}>
+                  <circle
+                    cx={xScale(dp.point.x)}
+                    cy={yScale(dp.point.y)}
+                    r={4}
+                    fill={dp.series.color || "currentColor"}
+                    opacity={0.9}
+                  />
+                </g>
+              ))}
               <rect
-                x={Math.min(innerWidth - 170, hover.px + 10)}
-                y={Math.max(0, hover.py - 34)}
-                width={
-                  label.length * 8 +
-                  (hover.dataPoint?.y ?? 0).toString().length * 8
-                }
-                height={44}
+                x={Math.min(innerWidth - 200, hover.px + 10)}
+                y={Math.max(0, hover.py - 34 - 20 * hover.dataPoints.length)}
+                width={200}
+                height={44 + 20 * hover.dataPoints.length}
                 rx={10}
                 fill="white"
                 opacity={0.92}
               />
               <text
-                x={Math.min(innerWidth - 160, hover.px + 18)}
-                y={Math.max(14, hover.py - 14)}
+                x={Math.min(innerWidth - 190, hover.px + 18)}
+                y={Math.max(14, hover.py - 14 - 20 * hover.dataPoints.length)}
                 fontSize={12}
                 fill="black"
               >
-                {d3.utcFormat("%Y-%m-%d")(hover.dataPoint?.x ?? new Date())}
+                {d3.utcFormat("%Y-%m-%d")(hover.dataPoints[0].point.x)}
               </text>
-              <text
-                x={Math.min(innerWidth - 160, hover.px + 18)}
-                y={Math.max(30, hover.py + 4)}
-                fontSize={12}
-                fill="black"
-              >
-                {label}: {d3.format(",")(hover.dataPoint?.y ?? 0)}
-              </text>
+              {hover.dataPoints.map((dp, i) => (
+                <text
+                  key={i}
+                  x={Math.min(innerWidth - 190, hover.px + 18)}
+                  y={Math.max(
+                    30 + 20 * i,
+                    hover.py + 4 - 20 * hover.dataPoints.length + 20 * i
+                  )}
+                  fontSize={12}
+                  fill={dp.series.color}
+                >
+                  {dp.series.label}: {d3.format(",")(dp.point.y)} {meassure}
+                </text>
+              ))}
             </g>
           )}
 
